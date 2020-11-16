@@ -91,8 +91,11 @@ class Cache: # for one entry
             self.block_size = 1 # directed mapping  
         else:         
             for i in range(0,32):
-                if(total_row_num<=(1<<i)): # find the 2^n that just bigger than the number of rows
-                    self.block_size = (1<<i) // cache_depth # set associative mapping
+                upperbound = (1<<i)
+                if( total_row_num <= upperbound ): # find the 2^n that just bigger than the number of rows
+                    self.block_size = upperbound // cache_depth # set associative mapping
+                    break
+            print("upperbound=",upperbound, "self.block_size=",self.block_size)
     
     def find_entry(self, vec_row): # give a row number, find the right entry index
         entry_index = vec_row // self.block_size
@@ -107,12 +110,10 @@ class Cache: # for one entry
         vec_row_in_mem = -1
         entry_index = self.find_entry(vec_row)
         entry_obj = self.cache_memory[entry_index]
-        #print("vec row=",vec_row)
         #file_handle=open(self.checkoutputfile,mode='a')
         if(entry_obj.check(vec_row)):
             value_t = entry_obj.read(vec_row, visit_time)
-            print("vec row",vec_row,"=",value_t, vec_value)
-            #print("vec row",vec_row,"=",value_t)
+            #print("vec row",vec_row,"=",value_t, vec_value)
         else: # if not find the value
             vec_row_in_mem = vec_row
         #file_handle.close()
@@ -408,8 +409,6 @@ def System_sim():
 
         vec_row_cache_write_req = from_vec_row_gen_cache_write_req(vec_row_req_mem, vec_row_value_dict)
         cache_u0.request_handler(vec_row_cache_write_req, time_step+memory_random_delay) # 5 is the memory access delay estimate
-        w_trace_t = output_buffer_u0.push_to_buffer(result_t)
-        memorytrace_u0.appendtrace(w_trace_t)
         time_step += 1
 
     results_vec = sorted(results_vec)
