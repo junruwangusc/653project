@@ -365,12 +365,12 @@ def from_vec_row_gen_cache_write_req(row_list, vec_row_value_dict):
     return cache_req_list
 
 def System_sim():
-    file_name = "email-Eu-core.txt"
+    file_name = "roadNet-CA.txt"
     m_data, vec_row_value_dict, vec_row_addr_dict, fisrt_row_of_blocks = readin_source(file_name)
     total_row_num = len(vec_row_addr_dict) # total exist row in matrix, which is also possible row number of the result
     res_row_to_rvac_dict = readin_result(file_name) # res_row_to_row_value_addr_channel_dict
 
-    memorytrace_u0 = Memorytrace("email-Eu-core.txt")
+    memorytrace_u0 = Memorytrace(file_name)
     cache_u0 = Cache(dosa, cache_depth, cache_width, total_row_num)
     output_buffer_u0 = Output_buffer(file_name)
 

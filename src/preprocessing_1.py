@@ -34,6 +34,7 @@ def output_processed_file(file_name, block_index, r_c_addr, first_row_in_block):
     out_file = open(output_file_name, mode='w')
     for data in first_row_in_block:
         print(data, file=out_file)
+    out_file.close()
     return 0
 
 def output_generated_vector(file_name, block_index, r_v_addr):
@@ -45,25 +46,30 @@ def output_generated_vector(file_name, block_index, r_v_addr):
     out_file = open(output_file_name, mode='w')
     for data in r_v_addr:
         print(data[0], data[1], data[2], file=out_file)
+    out_file.close()
     return 0
 
 
 def readin(file_name):
 # in_file is string of the dataset file name   
     file_path = "../data_sets/" + file_name
+    max_row_of_vec = 0
     edges = []
     in_file = open(file_path, mode='r')
     lines=in_file.readlines()
     for line in lines:
-        lineData=line.split(' ')    # split by " "
+        lineData=line.split('\t')    # split by " "
         if( (lineData[0] != "#") and str.isdigit(lineData[0]) ):
             edges.append((int(lineData[0]),int(lineData[1])))
+            max_row_of_vec = max(int(lineData[1]), max_row_of_vec)
+    in_file.close()
     edges = sorted(edges, key=operator.itemgetter(0,1))
     #sort the edges first by the row then the column
     non_zero_num = len(edges)#edges are also the number of non-zeros
     row_num = edges[len(edges)-1][0] + 1 # 0, 1, .... max row index
+    max_row_of_vec = max(max_row_of_vec, row_num)
     row_block_size = non_zero_num // channel_num #round down, number if elements
-    vec_block_size = row_num // channel_num
+    vec_block_size = max_row_of_vec // channel_num
     non_zero_thrshld = []
     row_thrshld = []
     for i in range(channel_num-1):
@@ -100,7 +106,7 @@ def readin(file_name):
     current_block = 0
     r_v_addr = [] # vector element value, row index, address
     accum_count = 0 # the order of the vector element in the corresponding block
-    for r in range(row_num): #0, 1, .... max row index+1-1
+    for r in range(max_row_of_vec+1): #0, 1, .... max row index+1-1
         if(current_block != (channel_num-1)):
             if(r >= row_thrshld[current_block]):
                 #print("current_block=",current_block)
@@ -119,7 +125,7 @@ def readin(file_name):
 
 
 def main():
-    file_name = "email-Eu-core.txt"
+    file_name = "roadNet-CA.txt"
     row_input, edge_input = readin(file_name)
     #print(memory_start_address())
     #print(data_in)

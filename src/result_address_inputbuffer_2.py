@@ -12,7 +12,6 @@ channel_num = 16 #define the channel num according to HBM
 blocksize = 536870912
 vector_offset = blocksize * 30 // 32
 result_offset = blocksize * 31 // 32
-result_start_addr = []
 inputbuffer_depth = 32
 
 def result_addr_generate(result_val, block_num, row_num, fisrt_row_of_the_block):
@@ -161,13 +160,11 @@ def get_matrix_data_operation(matrix_block_data, matrix_ptr_in):
             not_finished = 0 # no matrix data fetched, end the data access
     return buffered_matrix_data, matrix_ptr, not_finished # matrix_ptr for next time use, buffered_matrix_data for memory trace generate and get_vector_data_operation
         
-def get_vector_data_operation(buffered_matrix_data, vector_row_value_dict, vector_row_addr_dict, fisrt_row_of_blocks, last_row_in, result_val, result_row_finish_in, finished_channel_in):
+def get_vector_data_operation(buffered_matrix_data, vector_row_value_dict, vector_row_addr_dict, fisrt_row_of_blocks, last_row, result_val, result_row_finish_in):
     vector_addr = [] # record the vector address request
     result_out = []
-    current_row = last_row_in[:] # record current row in channel 0~15
-    last_row = last_row_in[:]
+    current_row = last_row[:] # record current row in channel 0~15
     result_row_finish = result_row_finish_in # record whether the result of the row is finished
-    finished_channel = finished_channel_in
     for i in range(len(buffered_matrix_data)): 
         #if(len(buffered_matrix_data)!=32):
         #    print("!!!!!!!")
@@ -193,7 +190,7 @@ def get_vector_data_operation(buffered_matrix_data, vector_row_value_dict, vecto
                     result_out.append(result_addr_generate(result_val[last_row[j]], j, last_row[j], fisrt_row_of_blocks[j]))
         last_row = current_row[:] #shallow copy
         #print("last_row=",last_row)
-    return result_out, last_row, result_val, result_row_finish, finished_channel
+    return result_out, last_row
 
 
 
@@ -204,13 +201,12 @@ def main():
     results_vec = []
     not_read_over = 1
     ptr_in_channel = 0
-    last_row_global = [-1 for i in range(channel_num)] # record last row in channel 0~15
-    result_val_channels_global = [0 for i in range(total_row_num)] # record result vector
+    last_row_channels = [-1 for i in range(channel_num)] # record last row in channel 0~15
+    result_val_channels = [0 for i in range(total_row_num)] # record result vector
     result_row_finish = [0 for i in range(total_row_num)] # record whether the result of the row is finished
-    finished_channel = [0 for i in range(total_row_num)] # avoid repetition subtraction
     while (not_read_over):
         buffered_matrix_data, ptr_in_channel, not_read_over = get_matrix_data_operation(m_data, ptr_in_channel)
-        result_t, last_row_global, result_val_channels_global, result_row_finish, finished_channel = get_vector_data_operation(buffered_matrix_data, v_r_value_dict, v_r_addr_dict, fisrt_row_of_blocks, last_row_global, result_val_channels_global, result_row_finish, finished_channel)
+        result_t, last_row_channels = get_vector_data_operation(buffered_matrix_data, v_r_value_dict, v_r_addr_dict, fisrt_row_of_blocks, last_row_channels, result_val_channels, result_row_finish)
         results_vec+=result_t
     results_vec = sorted(results_vec)
     output_generated_results(file_name, results_vec)
