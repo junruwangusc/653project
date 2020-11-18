@@ -1,5 +1,6 @@
 import operator
 import os
+import time
 
 # This program is for system simulation as well as generate the memory trace
 
@@ -74,7 +75,8 @@ class Cache_entry: # for one entry
 class Cache: # for one entry
     checkoutputfile = "check_cache_output.txt"
     cache_memory = [] # to store entries
-    cache_scheduled_events = [] # for requests and delayed operation, format [[row_index, value, read/write, time step that should finish]..]
+    #cache_scheduled_events = [] # for requests and delayed operation, format [[row_index, value, read/write, time step that should finish]..]
+    cache_scheduled_events = {} # for requests and delayed operation, format time step that should finish : [(row_index, value, read/write)( )( )..]
     source_vector_row_num = 0
     block_size = 0
     read_delay = 1 # 1 cycles
@@ -128,30 +130,34 @@ class Cache: # for one entry
 
     def events_run(self, time_step):
         vec_row_need_trace = []
-        for event in self.cache_scheduled_events:
-            visit_time_t = event[3]
-            if(visit_time_t == time_step):
+        if time_step in self.cache_scheduled_events:
+            for event in self.cache_scheduled_events[time_step]:
                 row_t = event[0]
                 value_t = event[1]
                 operation_type = event[2]
-                visit_time_t = event[3]
+                visit_time_t = time_step
                 if(operation_type == "read"):
                     vec_row_in_mem_t = self.read( row_t, value_t, visit_time_t)
                     if(vec_row_in_mem_t != -1): # if cache miss
                         vec_row_need_trace.append(vec_row_in_mem_t)
                 elif(operation_type == "write"):
                     self.write(row_t, value_t, visit_time_t)
+            del self.cache_scheduled_events[time_step] # This is to improve performance and reduce the cost of time and memory space
         return vec_row_need_trace
 
     def request_handler(self, request_list, time_step):
+        if not (time_step+self.read_delay in self.cache_scheduled_events):
+            self.cache_scheduled_events[time_step+self.read_delay] = []
+        if not (time_step+self.write_delay in self.cache_scheduled_events):
+            self.cache_scheduled_events[time_step+self.write_delay] = []
         for request in request_list:
             vec_row = request[0]
             vec_value = request[1]
             operation_type = request[2]
             if(operation_type=="read"):
-                self.cache_scheduled_events.append((vec_row, vec_value, operation_type, time_step+self.read_delay)) # use current timestep +delay
+                self.cache_scheduled_events[time_step+self.read_delay].append((vec_row, vec_value, operation_type)) # use current timestep +delay
             elif(operation_type=="write"):
-                self.cache_scheduled_events.append((vec_row, vec_value, operation_type, time_step+self.write_delay))
+                self.cache_scheduled_events[time_step+self.write_delay].append((vec_row, vec_value, operation_type))
         return 0
 
 class Memorytrace:
@@ -383,6 +389,8 @@ def System_sim():
     result_row_finish = [0 for i in range(total_row_num)] # record whether the result of the row is finished
     time_step = 0
     while (not_read_over):
+        if (time_step % 1000 == 0):
+            print("time_step=", time_step)
         buffered_matrix_data, ptr_in_channel, not_read_over, matrix_row_addr_req = get_matrix_data_operation(m_data, ptr_in_channel)
         matrix_row_read_trace = from_matrix_row_gen_read_trace(matrix_row_addr_req)
         memorytrace_u0.appendtrace(matrix_row_read_trace)   # add the matrix read traces
@@ -417,7 +425,14 @@ def System_sim():
 
 
 def main():
+    start_t = time.time()
+    print("Processing Start")
     System_sim()
+    end_t = time.time()
+    time_s = int(end_t - start_t)
+    print("Processing end, time consume=", time_s, "s")
+    input("Press <enter>")
+    
 
 
 if __name__ == '__main__':
