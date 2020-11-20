@@ -128,7 +128,7 @@ def output_generated_results(file_name, row_value_addr_channel):
     output_dir = "../proceeded_data_sets/"+file_name_without_extension
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    output_file_name = output_dir+"/"+file_name_without_extension+"_result_inputbuffer.txt"    
+    output_file_name = output_dir+"/"+file_name_without_extension+"_result.txt"    
     out_file = open(output_file_name, mode='w')
     for data in row_value_addr_channel:
         print(data[0], data[1], data[2], data[3], file=out_file)
@@ -195,7 +195,7 @@ def get_vector_data_operation(buffered_matrix_data, vector_row_value_dict, vecto
 
 
 def main():
-    file_name = "email-Eu-core.txt"
+    file_name = "roadNet-CA.txt"
     m_data, v_r_value_dict, v_r_addr_dict, fisrt_row_of_blocks = readin(file_name)
     total_row_num = len(v_r_value_dict)
     results_vec = []
